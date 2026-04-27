@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WorkBrain — Your Unified Work Memory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --bg2: #0f0f1a;
+    --bg3: #13131f;
+    --purple: #7c6fff;
+    --purple-dim: #5b50cc;
+    --green: #22d3a0;
+    --green-dim: #16a37a;
+    --text: #e8e6f0;
+    --text-muted: #8a879e;
+    --text-faint: #4a4760;
+    --border: rgba(124, 111, 255, 0.15);
+    --glass: rgba(255,255,255,0.03);
+    --glass-border: rgba(255,255,255,0.07);
+    --red: #ff5f7a;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── Noise overlay ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  /* ── Ambient blobs ── */
+  .ambient {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+    animation: drift 20s ease-in-out infinite alternate;
+  }
+  .amb-1 { width: 600px; height: 600px; background: rgba(124,111,255,0.07); top: -200px; left: -200px; }
+  .amb-2 { width: 500px; height: 500px; background: rgba(34,211,160,0.05); bottom: -100px; right: -100px; animation-delay: -10s; }
+  .amb-3 { width: 400px; height: 400px; background: rgba(124,111,255,0.04); top: 50%; left: 50%; transform: translate(-50%,-50%); animation-delay: -5s; }
+
+  @keyframes drift {
+    from { transform: translateY(0) scale(1); }
+    to   { transform: translateY(40px) scale(1.05); }
+  }
+
+  /* ── Layout ── */
+  section, nav, footer { position: relative; z-index: 1; }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    padding: 18px 0;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    background: rgba(10,10,15,0.7);
+    transition: all 0.3s;
+  }
+  nav .inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.25rem;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    color: var(--text);
+  }
+  .logo-icon {
+    width: 28px; height: 28px;
+    background: linear-gradient(135deg, var(--purple), var(--green));
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+  .nav-cta {
+    background: var(--purple);
+    color: #fff;
+    border: none;
+    padding: 9px 20px;
+    border-radius: 8px;
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+  }
+  .nav-cta:hover { background: var(--purple-dim); transform: translateY(-1px); }
+
+  /* ── HERO ── */
+  #hero {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    padding: 120px 0 80px;
+    text-align: center;
+  }
+  .hero-inner { width: 100%; }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(124,111,255,0.1);
+    border: 1px solid rgba(124,111,255,0.3);
+    border-radius: 999px;
+    padding: 6px 16px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--purple);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 36px;
+  }
+  .badge-dot {
+    width: 6px; height: 6px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: clamp(2.8rem, 7vw, 5.5rem);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    margin-bottom: 24px;
+  }
+  .gradient-text {
+    background: linear-gradient(135deg, #fff 0%, var(--purple) 50%, var(--green) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-sub {
+    font-size: clamp(1rem, 2vw, 1.25rem);
+    color: var(--text-muted);
+    max-width: 580px;
+    margin: 0 auto 48px;
+    line-height: 1.7;
+  }
+
+  /* ── Waitlist form ── */
+  .waitlist-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+  .waitlist-form {
+    display: flex;
+    gap: 0;
+    max-width: 480px;
+    width: 100%;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 6px;
+    backdrop-filter: blur(10px);
+  }
+  .waitlist-form input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    padding: 12px 16px;
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 0.95rem;
+    color: var(--text);
+    min-width: 0;
+  }
+  .waitlist-form input::placeholder { color: var(--text-faint); }
+  .waitlist-form button {
+    background: linear-gradient(135deg, var(--purple), #9b8fff);
+    color: #fff;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+  .waitlist-form button:hover { opacity: 0.9; transform: scale(1.02); }
+
+  .waitlist-count {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+  }
+  .avatars {
+    display: flex;
+  }
+  .avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: 2px solid var(--bg);
+    margin-left: -8px;
+    font-size: 0.65rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+  }
+  .avatars .avatar:first-child { margin-left: 0; }
+  .av1 { background: linear-gradient(135deg,#f093fb,#f5576c); }
+  .av2 { background: linear-gradient(135deg,#4facfe,#00f2fe); }
+  .av3 { background: linear-gradient(135deg,#43e97b,#38f9d7); }
+  .av4 { background: linear-gradient(135deg,#fa709a,#fee140); }
+
+  .count-num {
+    color: var(--green);
+    font-weight: 700;
+  }
+
+  .form-error {
+    font-size: 0.8rem;
+    color: var(--red);
+    display: none;
+  }
+  .form-success {
+    background: rgba(34,211,160,0.1);
+    border: 1px solid rgba(34,211,160,0.3);
+    border-radius: 10px;
+    padding: 14px 24px;
+    color: var(--green);
+    font-size: 0.9rem;
+    font-weight: 500;
+    display: none;
+    max-width: 480px;
+    width: 100%;
+    text-align: center;
+  }
+
+  /* ── TOOLS LOGOS ── */
+  .tools-row {
+    margin-top: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    flex-wrap: wrap;
+  }
+  .tools-label {
+    font-size: 0.78rem;
+    color: var(--text-faint);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-right: 24px;
+    width: 100%;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .tool-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 18px;
+    border: 1px solid var(--glass-border);
+    border-radius: 999px;
+    background: var(--glass);
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin: 4px 6px;
+    backdrop-filter: blur(8px);
+  }
+  .tool-icon { font-size: 1rem; }
+  .plus-connector {
+    color: var(--text-faint);
+    font-size: 1.1rem;
+    margin: 0 4px;
+  }
+
+  /* ── SECTION LABELS ── */
+  .section-label {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--purple);
+    margin-bottom: 16px;
+  }
+
+  /* ── PROBLEM ── */
+  #problem {
+    padding: 120px 0;
+    text-align: center;
+  }
+  #problem h2, #howitworks h2, #compare h2, #examples h2, #faq h2 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    letter-spacing: -0.025em;
+    margin-bottom: 16px;
+    line-height: 1.1;
+  }
+  .section-sub {
+    color: var(--text-muted);
+    max-width: 520px;
+    margin: 0 auto 60px;
+    font-size: 1rem;
+  }
+
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+  }
+  .glass-card {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 32px;
+    text-align: left;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s, border-color 0.3s;
+    backdrop-filter: blur(12px);
+  }
+  .glass-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(124,111,255,0.4), transparent);
+  }
+  .glass-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(124,111,255,0.3);
+  }
+  .card-icon {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    margin-bottom: 20px;
+  }
+  .icon-red { background: rgba(255,95,122,0.12); }
+  .icon-orange { background: rgba(255,160,80,0.12); }
+  .icon-yellow { background: rgba(255,220,80,0.12); }
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+    letter-spacing: -0.01em;
+  }
+  .card-body { color: var(--text-muted); font-size: 0.92rem; line-height: 1.65; }
+  .reddit-quote {
+    margin-top: 16px;
+    padding: 12px 16px;
+    background: rgba(255,255,255,0.03);
+    border-left: 2px solid var(--text-faint);
+    border-radius: 0 8px 8px 0;
+    font-size: 0.82rem;
+    color: var(--text-faint);
+    font-style: italic;
+  }
+
+  /* ── HOW IT WORKS ── */
+  #howitworks {
+    padding: 120px 0;
+    text-align: center;
+  }
+  .steps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+    gap: 20px;
+    position: relative;
+  }
+  .step-card {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 36px 28px;
+    position: relative;
+    text-align: left;
+    transition: transform 0.3s;
+  }
+  .step-card:hover { transform: translateY(-4px); }
+  .step-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 3.5rem;
+    font-weight: 800;
+    color: rgba(124,111,255,0.12);
+    line-height: 1;
+    margin-bottom: 16px;
+    letter-spacing: -0.04em;
+  }
+  .step-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1.15rem;
+    margin-bottom: 10px;
+    letter-spacing: -0.01em;
+  }
+  .step-body { color: var(--text-muted); font-size: 0.92rem; line-height: 1.65; }
+  .step-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 16px;
+    background: rgba(34,211,160,0.08);
+    border: 1px solid rgba(34,211,160,0.2);
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--green);
+  }
+
+  /* ── COMPARE ── */
+  #compare {
+    padding: 120px 0;
+    text-align: center;
+  }
+  .table-wrap {
+    overflow-x: auto;
+    border-radius: 16px;
+    border: 1px solid var(--glass-border);
+    background: var(--glass);
+    backdrop-filter: blur(12px);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px;
+  }
+  thead th {
+    padding: 20px 24px;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    color: var(--text-muted);
+    text-align: left;
+    border-bottom: 1px solid var(--glass-border);
+    white-space: nowrap;
+  }
+  thead th.highlight {
+    color: var(--purple);
+    background: rgba(124,111,255,0.06);
+  }
+  thead th.highlight .th-inner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .th-badge {
+    background: var(--purple);
+    color: #fff;
+    font-size: 0.65rem;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-weight: 700;
+  }
+  tbody tr {
+    border-bottom: 1px solid var(--glass-border);
+    transition: background 0.2s;
+  }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: rgba(255,255,255,0.02); }
+  tbody td {
+    padding: 16px 24px;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    text-align: left;
+  }
+  tbody td:first-child { color: var(--text); font-weight: 500; }
+  tbody td.highlight { background: rgba(124,111,255,0.04); }
+  .check { color: var(--green); font-weight: 700; font-size: 1rem; }
+  .cross { color: var(--red); }
+  .partial { color: #f5a623; }
+
+  /* ── EXAMPLES ── */
+  #examples {
+    padding: 120px 0;
+    text-align: center;
+  }
+  .examples-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+    gap: 20px;
+    text-align: left;
+  }
+  .example-card {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: transform 0.3s, border-color 0.3s;
+    backdrop-filter: blur(12px);
+  }
+  .example-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(124,111,255,0.3);
+  }
+  .ex-query {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--glass-border);
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .ex-q-icon {
+    width: 32px; height: 32px;
+    min-width: 32px;
+    border-radius: 8px;
+    background: rgba(124,111,255,0.15);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem;
+  }
+  .ex-q-text {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.4;
+    padding-top: 6px;
+  }
+  .ex-answer {
+    padding: 20px 24px;
+  }
+  .ex-a-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--green);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .ex-a-label::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--green);
+    border-radius: 50%;
+    display: inline-block;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  .ex-a-text {
+    font-size: 0.87rem;
+    color: var(--text-muted);
+    line-height: 1.65;
+  }
+  .ex-sources {
+    margin-top: 14px;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .source-tag {
+    font-size: 0.7rem;
+    padding: 3px 9px;
+    border-radius: 999px;
+    border: 1px solid var(--glass-border);
+    color: var(--text-faint);
+    font-weight: 500;
+  }
+
+  /* ── SOCIAL PROOF ── */
+  #proof {
+    padding: 80px 0;
+  }
+  .proof-inner {
+    background: linear-gradient(135deg, rgba(124,111,255,0.08), rgba(34,211,160,0.05));
+    border: 1px solid rgba(124,111,255,0.2);
+    border-radius: 24px;
+    padding: 60px 48px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .proof-inner::before {
+    content: '"';
+    position: absolute;
+    top: -20px; left: 24px;
+    font-family: 'Syne', sans-serif;
+    font-size: 12rem;
+    font-weight: 800;
+    color: rgba(124,111,255,0.08);
+    line-height: 1;
+    pointer-events: none;
+  }
+  .proof-quote {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(1.2rem, 3vw, 1.8rem);
+    font-weight: 700;
+    line-height: 1.3;
+    letter-spacing: -0.02em;
+    max-width: 720px;
+    margin: 0 auto 28px;
+    color: var(--text);
+  }
+  .proof-quote em {
+    font-style: normal;
+    background: linear-gradient(135deg, var(--purple), var(--green));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .proof-attr {
+    font-size: 0.85rem;
+    color: var(--text-faint);
+  }
+  .proof-attr strong { color: var(--text-muted); }
+
+  /* ── FAQ ── */
+  #faq {
+    padding: 120px 0;
+  }
+  #faq .container { max-width: 720px; }
+  #faq h2 { text-align: center; margin-bottom: 12px; }
+  #faq .section-sub { text-align: center; }
+  .faq-list { margin-top: 48px; display: flex; flex-direction: column; gap: 12px; }
+  .faq-item {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .faq-item.open { border-color: rgba(124,111,255,0.3); }
+  .faq-q {
+    padding: 20px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text);
+    user-select: none;
+  }
+  .faq-q:hover { color: var(--purple); }
+  .faq-arrow {
+    width: 24px; height: 24px;
+    min-width: 24px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-faint);
+    transition: transform 0.3s;
+    font-size: 1.2rem;
+  }
+  .faq-item.open .faq-arrow { transform: rotate(45deg); color: var(--purple); }
+  .faq-a {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease, padding 0.3s;
+    color: var(--text-muted);
+    font-size: 0.92rem;
+    line-height: 1.7;
+    padding: 0 24px;
+  }
+  .faq-item.open .faq-a { max-height: 400px; padding: 0 24px 20px; }
+
+  /* ── FINAL CTA ── */
+  #final-cta {
+    padding: 120px 0;
+    text-align: center;
+  }
+  .cta-box {
+    background: linear-gradient(135deg, rgba(124,111,255,0.1), rgba(34,211,160,0.06));
+    border: 1px solid rgba(124,111,255,0.25);
+    border-radius: 24px;
+    padding: 80px 48px;
+    position: relative;
+    overflow: hidden;
+  }
+  .cta-box::after {
+    content: '';
+    position: absolute;
+    top: -50%; left: 50%;
+    transform: translateX(-50%);
+    width: 600px; height: 300px;
+    background: radial-gradient(ellipse, rgba(124,111,255,0.1), transparent 70%);
+    pointer-events: none;
+  }
+  .cta-urgency {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,95,122,0.1);
+    border: 1px solid rgba(255,95,122,0.3);
+    border-radius: 999px;
+    padding: 6px 16px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--red);
+    letter-spacing: 0.05em;
+    margin-bottom: 28px;
+  }
+  .cta-box h2 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    letter-spacing: -0.025em;
+    margin-bottom: 16px;
+    line-height: 1.1;
+  }
+  .cta-box p {
+    color: var(--text-muted);
+    max-width: 480px;
+    margin: 0 auto 40px;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    padding: 40px 0;
+    border-top: 1px solid var(--glass-border);
+    text-align: center;
+  }
+  .footer-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  footer .logo { font-size: 1rem; }
+  .footer-copy { font-size: 0.82rem; color: var(--text-faint); }
+  .footer-links { display: flex; gap: 20px; }
+  .footer-links a { color: var(--text-faint); text-decoration: none; font-size: 0.82rem; transition: color 0.2s; }
+  .footer-links a:hover { color: var(--text-muted); }
+
+  /* ── SCROLL ANIMATIONS ── */
+  .fade-up {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .fade-up.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .fade-up-d1 { transition-delay: 0.1s; }
+  .fade-up-d2 { transition-delay: 0.2s; }
+  .fade-up-d3 { transition-delay: 0.3s; }
+
+  /* ── MOBILE ── */
+  @media (max-width: 640px) {
+    .waitlist-form { flex-direction: column; gap: 8px; }
+    .waitlist-form button { width: 100%; padding: 14px; }
+    .proof-inner { padding: 40px 24px; }
+    .cta-box { padding: 48px 24px; }
+    .footer-inner { flex-direction: column; text-align: center; }
+    .footer-links { justify-content: center; }
+    thead th, tbody td { padding: 14px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="ambient amb-1"></div>
+<div class="ambient amb-2"></div>
+<div class="ambient amb-3"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="inner">
+    <a href="#" class="logo">
+      <div class="logo-icon">🧠</div>
+      WorkBrain
+    </a>
+    <a href="#final-cta" class="nav-cta">Join Waitlist</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="container hero-inner">
+    <div class="badge"><div class="badge-dot"></div>Now in private beta</div>
+
+    <h1>
+      Stop searching.<br>
+      <span class="gradient-text">Start knowing.</span>
+    </h1>
+
+    <p class="hero-sub">
+      WorkBrain is a unified memory layer that indexes your Notion, Linear, Slack, and Gmail —
+      then lets you query everything in plain English. One question. One answer. Zero context switching.
+    </p>
+
+    <div class="waitlist-wrap">
+      <div class="waitlist-form" id="heroForm">
+        <input type="email" id="heroEmail" placeholder="you@company.com" autocomplete="email">
+        <button onclick="joinWaitlist('heroEmail','heroSuccess','heroError','heroForm')">Get early access →</button>
+      </div>
+      <div class="form-error" id="heroError">Please enter a valid email address.</div>
+      <div class="form-success" id="heroSuccess">🎉 You're on the list! We'll reach out soon.</div>
+      <div class="waitlist-count">
+        <div class="avatars">
+          <div class="avatar av1">J</div>
+          <div class="avatar av2">S</div>
+          <div class="avatar av3">M</div>
+          <div class="avatar av4">R</div>
+        </div>
+        <span><span class="count-num" id="heroCount">127</span> people already waiting</span>
+      </div>
+    </div>
+
+    <div class="tools-row">
+      <div class="tools-label">Connects with your existing stack</div>
+      <div class="tool-chip"><span class="tool-icon">📝</span> Notion</div>
+      <span class="plus-connector">+</span>
+      <div class="tool-chip"><span class="tool-icon">🎯</span> Linear</div>
+      <span class="plus-connector">+</span>
+      <div class="tool-chip"><span class="tool-icon">💬</span> Slack</div>
+      <span class="plus-connector">+</span>
+      <div class="tool-chip"><span class="tool-icon">📧</span> Gmail</div>
+    </div>
+  </div>
+</section>
+
+<!-- PROBLEM -->
+<section id="problem">
+  <div class="container">
+    <div class="fade-up">
+      <div class="section-label">The problem</div>
+      <h2>Your memory is scattered<br>across every tool you use</h2>
+      <p class="section-sub">Context lives everywhere but the one place you need it — your head. And your head can only hold so much.</p>
+    </div>
+
+    <div class="cards-grid">
+      <div class="glass-card fade-up fade-up-d1">
+        <div class="card-icon icon-red">🧩</div>
+        <div class="card-title">Fragmented context</div>
+        <div class="card-body">
+          The decision was in a Slack thread. The spec is in Notion. The ticket is in Linear. The email thread is in Gmail. None of it talks to each other.
+          <div class="reddit-quote">"Your memory is scattered across tools and there's no way to unify it."</div>
+        </div>
+      </div>
+      <div class="glass-card fade-up fade-up-d2">
+        <div class="card-icon icon-orange">🔄</div>
+        <div class="card-title">Brutal context switching</div>
+        <div class="card-body">
+          You spend more time finding information than using it. Every switch costs you 20 minutes of flow. Multiply that by 10 searches a day.
+          <div class="reddit-quote">"The factory reset every new machine feeling is brutal — you lose the invisible knowledge."</div>
+        </div>
+      </div>
+      <div class="glass-card fade-up fade-up-d3">
+        <div class="card-icon icon-yellow">💭</div>
+        <div class="card-title">Lost decisions</div>
+        <div class="card-body">
+          Why was this architectural decision made? Who approved this scope change? The answer exists — buried somewhere — but finding it takes longer than re-doing the work.
+          <div class="reddit-quote">"Syncing files is a 2010 solution for a 2026 problem."</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="howitworks">
+  <div class="container">
+    <div class="fade-up">
+      <div class="section-label">How it works</div>
+      <h2>Three steps to one<br>unified brain</h2>
+      <p class="section-sub">No migration. No new habits. WorkBrain works on top of the tools you already use.</p>
+    </div>
+
+    <div class="steps-grid">
+      <div class="step-card fade-up fade-up-d1">
+        <div class="step-num">01</div>
+        <div class="step-title">Connect your sources</div>
+        <div class="step-body">OAuth in 60 seconds. Connect Notion, Linear, Slack, and Gmail. WorkBrain never stores raw content — only encrypted semantic indexes.</div>
+        <div class="step-pill">🔌 One-click OAuth</div>
+      </div>
+      <div class="step-card fade-up fade-up-d2">
+        <div class="step-num">02</div>
+        <div class="step-title">WorkBrain indexes</div>
+        <div class="step-body">Our semantic engine reads across all sources simultaneously, building a unified memory layer that understands relationships between your work — not just keywords.</div>
+        <div class="step-pill">⚡ Real-time sync</div>
+      </div>
+      <div class="step-card fade-up fade-up-d3">
+        <div class="step-num">03</div>
+        <div class="step-title">Ask anything</div>
+        <div class="step-body">Type a plain English question. Get one synthesized answer grounded in your actual work context — with sources cited so you can verify.</div>
+        <div class="step-pill">🧠 Semantic search</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPARE -->
+<section id="compare">
+  <div class="container">
+    <div class="fade-up">
+      <div class="section-label">Comparison</div>
+      <h2>Not another AI chatbot</h2>
+      <p class="section-sub">See how WorkBrain stacks up against alternatives you've already tried.</p>
+    </div>
+    <div class="table-wrap fade-up">
+      <table>
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th class="highlight"><div class="th-inner">WorkBrain <span class="th-badge">YOU</span></div></th>
+            <th>Notion AI</th>
+            <th>Manual Search</th>
+            <th>ChatGPT</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Works without Notion</td>
+            <td class="highlight"><span class="check">✓</span></td>
+            <td><span class="cross">✕</span></td>
+            <td><span class="check">✓</span></td>
+            <td><span class="check">✓</span></td>
+          </tr>
+          <tr>
+            <td>Searches Slack + Gmail</td>
+            <td class="highlight"><span class="check">✓</span></td>
+            <td><span class="cross">✕</span></td>
+            <td><span class="partial">~</span></td>
+            <td><span class="cross">✕</span></td>
+          </tr>
+          <tr>
+            <td>Simultaneous cross-source search</td>
+            <td class="highlight"><span class="check">✓</span></td>
+            <td><span class="cross">✕</span></td>
+            <td><span class="cross">✕</span></td>
+            <td><span class="cross">✕</span></td>
+          </tr>
+          <tr>
+            <td>Semantic understanding</td>
+            <td class="highlight"><span class="check">✓</span></td>
+            <td><span class="partial">~</span></td>
+            <td><span class="cross">✕</span></td>
+            <td><span class="check">✓</span></td>
+          </tr>
+          <tr>
+            <td>Grounded in real work context</td>
+            <td class="highlight"><span class="check">✓</span></td>
+            <td><span class="partial">~</span></td>
+            <td><span class="check">✓</span></td>
+            <td><span class="cross">✕</span></td>
+          </tr>
+          <tr>
+            <td>No migration needed</td>
+            <td class="highlight"><span class="check">✓</span></td>
+            <td><span class="cross">✕</span></td>
+            <td><span class="check">✓</span></td>
+            <td><span class="check">✓</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- USE CASE EXAMPLES -->
+<section id="examples">
+  <div class="container">
+    <div class="fade-up">
+      <div class="section-label">Real examples</div>
+      <h2>Ask anything about your work</h2>
+      <p class="section-sub">These are real questions WorkBrain answers — synthesized across all your tools simultaneously.</p>
+    </div>
+    <div class="examples-grid">
+      <div class="example-card fade-up fade-up-d1">
+        <div class="ex-query">
+          <div class="ex-q-icon">💬</div>
+          <div class="ex-q-text">"Why did we drop the analytics dashboard from v2 scope?"</div>
+        </div>
+        <div class="ex-answer">
+          <div class="ex-a-label">WorkBrain answer</div>
+          <div class="ex-a-text">The analytics dashboard was deprioritized in the Linear sprint planning thread (Nov 14) after Rohan flagged a 3-week engineering estimate. The decision was confirmed in a Slack DM with Maya, and the Notion spec was updated to "v3 candidate" on Nov 15.</div>
+          <div class="ex-sources">
+            <span class="source-tag">📝 Notion</span>
+            <span class="source-tag">🎯 Linear</span>
+            <span class="source-tag">💬 Slack</span>
+          </div>
+        </div>
+      </div>
+      <div class="example-card fade-up fade-up-d2">
+        <div class="ex-query">
+          <div class="ex-q-icon">📧</div>
+          <div class="ex-q-text">"What did the design agency say about our brand refresh?"</div>
+        </div>
+        <div class="ex-answer">
+          <div class="ex-a-label">WorkBrain answer</div>
+          <div class="ex-a-text">Studio Kern sent 3 email threads between Oct 3–18 proposing a move to a dark palette with purple accents. They flagged concerns about contrast ratios in the second email. Final deliverables are attached in the Oct 18 thread.</div>
+          <div class="ex-sources">
+            <span class="source-tag">📧 Gmail</span>
+          </div>
+        </div>
+      </div>
+      <div class="example-card fade-up fade-up-d3">
+        <div class="ex-query">
+          <div class="ex-q-icon">🎯</div>
+          <div class="ex-q-text">"What's blocking the auth service deployment?"</div>
+        </div>
+        <div class="ex-answer">
+          <div class="ex-a-label">WorkBrain answer</div>
+          <div class="ex-a-text">Two blockers: (1) Linear ticket AUTH-89 — missing staging environment variables, assigned to Dev but no ETA set. (2) A Slack message from Priya yesterday flagging that the load balancer config hasn't been updated yet.</div>
+          <div class="ex-sources">
+            <span class="source-tag">🎯 Linear</span>
+            <span class="source-tag">💬 Slack</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SOCIAL PROOF -->
+<section id="proof">
+  <div class="container">
+    <div class="proof-inner fade-up">
+      <blockquote class="proof-quote">
+        "The harder problem isn't the config files — it's <em>the knowledge the agent should have about your world.</em>"
+      </blockquote>
+      <div class="proof-attr">
+        <strong>u/devtools_rant</strong> · r/SideProject · 4.2k upvotes
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq">
+  <div class="container">
+    <div class="fade-up">
+      <div class="section-label" style="display:block;text-align:center;">FAQ</div>
+      <h2>Questions answered</h2>
+      <p class="section-sub">Especially the one you're already thinking about.</p>
+    </div>
+    <div class="faq-list fade-up">
+      <div class="faq-item open">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          Why not just use Notion AI connectors?
+          <div class="faq-arrow">+</div>
+        </div>
+        <div class="faq-a">
+          Notion AI connectors only work if you already live in Notion — and even then, they search one tool at a time. WorkBrain is tool-agnostic and searches semantically across all your sources simultaneously. A decision buried in a Slack thread, a spec in Notion, and a blocker in Linear all surface in a single synthesized answer. Plus, you don't have to migrate anything.
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          Is my data stored on your servers?
+          <div class="faq-arrow">+</div>
+        </div>
+        <div class="faq-a">
+          WorkBrain stores only encrypted semantic embeddings — never the raw content of your documents or messages. OAuth tokens are encrypted at rest. You can revoke access at any time and your indexes are permanently deleted within 24 hours.
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          How is this different from ChatGPT with plugins?
+          <div class="faq-arrow">+</div>
+        </div>
+        <div class="faq-a">
+          ChatGPT with plugins requires you to know which plugin to use, trigger it manually, and it still doesn't combine context across sources. WorkBrain is always-on, indexes everything proactively, and synthesizes answers from across all your tools without you having to think about it.
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          Will it work for teams or just individuals?
+          <div class="faq-arrow">+</div>
+        </div>
+        <div class="faq-a">
+          We're launching for solo founders, PMs, and individual developers first. Team workspaces with shared memory and access controls are on the roadmap for Q3 2026.
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          When does WorkBrain launch?
+          <div class="faq-arrow">+</div>
+        </div>
+        <div class="faq-a">
+          Private beta invites go out in rolling waves starting May 2026. Joining the waitlist now gets you early priority access and a 40% lifetime discount on any paid plan.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section id="final-cta">
+  <div class="container">
+    <div class="cta-box fade-up">
+      <div class="cta-urgency">⚡ Only 200 beta spots available</div>
+      <h2>Stop losing context.<br><span class="gradient-text">Start shipping faster.</span></h2>
+      <p>Join the waitlist today and get priority access + 40% off your first year. No credit card required.</p>
+
+      <div class="waitlist-wrap">
+        <div class="waitlist-form" id="ctaForm">
+          <input type="email" id="ctaEmail" placeholder="you@company.com" autocomplete="email">
+          <button onclick="joinWaitlist('ctaEmail','ctaSuccess','ctaError','ctaForm')">Reserve my spot →</button>
+        </div>
+        <div class="form-error" id="ctaError">Please enter a valid email address.</div>
+        <div class="form-success" id="ctaSuccess">🎉 You're on the list! We'll reach out soon.</div>
+        <div class="waitlist-count">
+          <div class="avatars">
+            <div class="avatar av1">J</div>
+            <div class="avatar av2">S</div>
+            <div class="avatar av3">M</div>
+            <div class="avatar av4">R</div>
+          </div>
+          <span><span class="count-num" id="ctaCount">127</span> people already waiting</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-inner">
+      <a href="#" class="logo">
+        <div class="logo-icon">🧠</div>
+        WorkBrain
+      </a>
+      <div class="footer-copy">© 2026 WorkBrain. All rights reserved.</div>
+      <div class="footer-links">
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+        <a href="mailto:hello@workbrain.ai">Contact</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // ── Supabase config ──
+  const SUPABASE_URL = 'https://korpuxkvbwvpvphpdygf.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtvcnB1eGt2Ynd2cHZwaHBkeWdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyNzUzNDEsImV4cCI6MjA5Mjg1MTM0MX0.cQ5GdvCGUbREfAtZTwe3HcVO6Zs1OfybpdFeIO50UMg';
+
+  // ── Waitlist logic ──
+  const STORAGE_KEY = 'workbrain_waitlist';
+  const BASE_COUNT = 127;
+
+  function getWaitlist() {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    } catch { return []; }
+  }
+
+  function saveLocalEmail(email) {
+    const list = getWaitlist();
+    if (!list.includes(email)) {
+      list.push(email);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    }
+  }
+
+  function isEmailSaved(email) {
+    return getWaitlist().includes(email);
+  }
+
+  function getTotalCount() {
+    return BASE_COUNT + getWaitlist().length;
+  }
+
+  function updateCounts() {
+    const count = getTotalCount();
+    document.querySelectorAll('[id$="Count"]').forEach(el => {
+      el.textContent = count;
+    });
+  }
+
+  function validateEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+
+  async function submitToSupabase(email) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/waitlist`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({ email })
+    });
+    return res;
+  }
+
+  async function joinWaitlist(inputId, successId, errorId, formId) {
+    const input = document.getElementById(inputId);
+    const successEl = document.getElementById(successId);
+    const errorEl = document.getElementById(errorId);
+    const formEl = document.getElementById(formId);
+    const btn = formEl.querySelector('button');
+    const email = input.value.trim();
+
+    errorEl.style.display = 'none';
+    successEl.style.display = 'none';
+
+    if (!validateEmail(email)) {
+      errorEl.style.display = 'block';
+      input.focus();
+      return;
+    }
+
+    if (isEmailSaved(email)) {
+      successEl.textContent = '✅ You\'re already on the list! We\'ll reach out soon.';
+      successEl.style.display = 'block';
+      formEl.style.display = 'none';
+      return;
+    }
+
+    // Show loading state
+    const originalText = btn.textContent;
+    btn.textContent = 'Saving...';
+    btn.disabled = true;
+
+    try {
+      const res = await submitToSupabase(email);
+
+      if (res.ok || res.status === 201) {
+        // Success
+        saveLocalEmail(email);
+        updateCounts();
+        formEl.style.display = 'none';
+        successEl.textContent = '🎉 You\'re on the list! We\'ll reach out soon.';
+        successEl.style.display = 'block';
+      } else if (res.status === 409) {
+        // Duplicate in DB — still count as success
+        saveLocalEmail(email);
+        updateCounts();
+        formEl.style.display = 'none';
+        successEl.textContent = '✅ You\'re already on the list! We\'ll reach out soon.';
+        successEl.style.display = 'block';
+      } else {
+        throw new Error('Server error');
+      }
+    } catch (err) {
+      // Fallback: save locally if Supabase fails
+      saveLocalEmail(email);
+      updateCounts();
+      formEl.style.display = 'none';
+      successEl.textContent = '🎉 You\'re on the list! We\'ll reach out soon.';
+      successEl.style.display = 'block';
+      console.warn('Supabase error, saved locally:', err);
+    }
+  }
+
+  // ── FAQ toggle ──
+  function toggleFaq(el) {
+    const item = el.parentElement;
+    const isOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+    if (!isOpen) item.classList.add('open');
+  }
+
+  // ── Scroll animations ──
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+  document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+  // ── Hero elements visible immediately ──
+  document.querySelectorAll('#hero .fade-up').forEach(el => {
+    el.classList.add('visible');
+  });
+
+  // ── Init counts ──
+  updateCounts();
+
+  // ── Nav scroll effect ──
+  window.addEventListener('scroll', () => {
+    const nav = document.querySelector('nav');
+    nav.style.background = window.scrollY > 60 
+      ? 'rgba(10,10,15,0.92)' 
+      : 'rgba(10,10,15,0.7)';
+  });
+</script>
+</body>
+</html>
